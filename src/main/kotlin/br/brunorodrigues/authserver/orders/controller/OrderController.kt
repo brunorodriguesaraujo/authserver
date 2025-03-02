@@ -1,8 +1,8 @@
 package br.brunorodrigues.authserver.orders.controller
 
-import br.brunorodrigues.authserver.orders.services.OrderService
 import br.brunorodrigues.authserver.orders.controller.requests.CreateOrderRequest
 import br.brunorodrigues.authserver.orders.controller.responses.OrderResponse
+import br.brunorodrigues.authserver.orders.services.OrderService
 import br.brunorodrigues.authserver.security.UserToken
 import br.brunorodrigues.authserver.users.SortDir
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
@@ -32,7 +32,7 @@ class OrderController(
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @SecurityRequirement(name = "AuthServer")
-    fun delete(@PathVariable id: Long, auth: Authentication): ResponseEntity<Void>{
+    fun delete(@PathVariable id: Long, auth: Authentication): ResponseEntity<Void> {
         val user = auth.principal as UserToken
         val order = orderService.findByIdOrNull(id) ?: return ResponseEntity.notFound().build()
 
@@ -43,22 +43,23 @@ class OrderController(
     }
 
     @GetMapping
+    @SecurityRequirement(name = "AuthServer")
     fun findAll(@RequestParam dir: String = "ASC", auth: Authentication): ResponseEntity<List<OrderResponse>> {
-        val sortDir = SortDir.findOrNull(dir) ?: return ResponseEntity.badRequest().build()
         val user = auth.principal as UserToken
 
-        return orderService.findAll(sortDir)
+        val orders = orderService.findAll(SortDir.findOrNull(dir) ?: return ResponseEntity.badRequest().build())
             .filter { it.user.id == user.id || user.isAdmin }
-            .map { OrderResponse(it) }
-            .let { ResponseEntity.ok(it) }
+
+        return ResponseEntity.ok(orders.map { OrderResponse(it) })
     }
 
     @GetMapping("/{id}")
+    @SecurityRequirement(name = "AuthServer")
     fun getById(@PathVariable id: Long, auth: Authentication): ResponseEntity<OrderResponse> {
         val user = auth.principal as UserToken
         val order = orderService.findByIdOrNull(id) ?: return ResponseEntity.notFound().build()
 
-        if (user.id != order.user.id) {
+        if (order.user.id != user.id && !user.isAdmin) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
         }
 
