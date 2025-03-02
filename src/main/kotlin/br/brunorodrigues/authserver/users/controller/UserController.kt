@@ -7,6 +7,7 @@ import br.brunorodrigues.authserver.users.controller.requests.CreateUserRequest
 import br.brunorodrigues.authserver.users.controller.requests.LoginRequest
 import br.brunorodrigues.authserver.users.controller.responses.UserResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/users")
+@Tag(name = "Users")
 class UserController(
     val userService: UserService
 ) {
@@ -57,7 +59,7 @@ class UserController(
     }
 
     @PutMapping("/{id}/roles/{role}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('ADMIN')")
     @SecurityRequirement(name = "AuthServer")
     fun grant(@PathVariable id: Long, @PathVariable role: String): ResponseEntity<Void> =
         if (userService.addRole(id, role)) ResponseEntity.ok().build()

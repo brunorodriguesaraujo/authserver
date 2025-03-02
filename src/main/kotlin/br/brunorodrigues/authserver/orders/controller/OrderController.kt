@@ -6,6 +6,7 @@ import br.brunorodrigues.authserver.orders.controller.responses.OrderResponse
 import br.brunorodrigues.authserver.security.UserToken
 import br.brunorodrigues.authserver.users.SortDir
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -14,13 +15,16 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/orders")
+@Tag(name = "Orders")
 class OrderController(
     private val orderService: OrderService
 ) {
     @PostMapping
     @PreAuthorize("isAuthenticated()")
     @SecurityRequirement(name = "AuthServer")
-    fun createOrder(@RequestParam userId: Long, @RequestBody request: CreateOrderRequest): ResponseEntity<OrderResponse> {
+    fun createOrder(@RequestBody request: CreateOrderRequest, auth: Authentication): ResponseEntity<OrderResponse> {
+        val user = auth.principal as UserToken
+        val userId = user.id
         val order = orderService.createOrder(userId, request)
         return ResponseEntity.status(HttpStatus.CREATED).body(OrderResponse(order))
     }
