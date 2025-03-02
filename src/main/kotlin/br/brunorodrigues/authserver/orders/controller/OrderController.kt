@@ -43,17 +43,25 @@ class OrderController(
     }
 
     @GetMapping
-    fun findAll(@RequestParam dir: String = "ASC"): ResponseEntity<List<OrderResponse>> {
+    fun findAll(@RequestParam dir: String = "ASC", auth: Authentication): ResponseEntity<List<OrderResponse>> {
         val sortDir = SortDir.findOrNull(dir) ?: return ResponseEntity.badRequest().build()
+        val user = auth.principal as UserToken
+
         return orderService.findAll(sortDir)
+            .filter { it.user.id == user.id || user.isAdmin }
             .map { OrderResponse(it) }
             .let { ResponseEntity.ok(it) }
     }
 
     @GetMapping("/{id}")
-    fun getById(@PathVariable id: Long) =
-        orderService.findByIdOrNull(id)
-            ?.let { OrderResponse(it) }
-            ?.let { ResponseEntity.ok(it) }
-            ?: ResponseEntity.notFound().build()
+    fun getById(@PathVariable id: Long, auth: Authentication): ResponseEntity<OrderResponse> {
+        val user = auth.principal as UserToken
+        val order = orderService.findByIdOrNull(id) ?: return ResponseEntity.notFound().build()
+
+        if (user.id != order.user.id) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        }
+
+        return ResponseEntity.ok(OrderResponse(order))
+    }
 }
